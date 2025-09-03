@@ -101,7 +101,7 @@ Function Discovery_ {
     #Continue_
 }
 
-Function Set_Internal_IPs_V {
+Function Set_Internal_IPs {
     cls
     Write-Host "Starting Function: Set_Internal_IPs" -ForegroundColor Cyan
     Start-Sleep -s 1
@@ -130,36 +130,7 @@ Function Set_Internal_IPs_V {
     Write-Host "Function: Set_Internal_IPs   -   Complete" -ForegroundColor Green
     #Continue_
 }
-Function Set_Internal_IPs_H {
-    cls
-    Write-Host "Starting Function: Set_Internal_IPs" -ForegroundColor Cyan
-    Start-Sleep -s 1
-    $global:Email = "172.20.240.11"
-    $global:DNSNTP = "172.20.240.23"
-    $global:Ubuntu18Web = "172.20.240.5"
-    $global:SnipeIT = "172.20.240.97"
-    $global:ADDNS = "172.20.241.27"
-    $global:Splunk = "172.20.241.3"
-    $global:UbuntuWork = "172.20.242.100"
-    $global:HardWin10 = "172.20.242.100"
-    $global:Internal = @($Email,$DNSNTP,$Ubuntu18Web, $SnipeIT, $ADDNS,$Splunk ,$UbuntuWork, $HardWin10)
-    cls
-    Write-Host "----IPs set for Internal config:----" -ForegroundColor Green
-    Write-host "-----------------------------"
-    Write-Host "Email: $Email"
-    Write-Host "DNS-NTP: $DNSNTP"
-    Write-Host "Ubuntu-18-Web: $Ubuntu18Web"
-    Write-Host "Snipe-IT: $SnipeIT"
-    Write-Host "PA MI: $PAMI"
-    Write-Host "AD-DNS: $ADDNS"
-    Write-Host "Security Onion: $Splunk"
-    Write-Host "Ubuntu Workstation: $UbuntuWork"
-    Write-Host "Windows 10 Workstation: $HardWin10"
-    Write-Host "-----------------------------"
-    Write-Host ""
-    Write-Host "Function: Set_Internal_IPs   -   Complete" -ForegroundColor Green
-    #Continue_
-}
+
 
 Function Set_External_IPs {
     cls
@@ -197,17 +168,19 @@ Function Splunk_Logging {
     cls
     Write-Host "Starting Function: Splunk_Logging" -ForegroundColor Cyan
     Start-Sleep -s 1
-    netsh advfirewall export $ccdcpath\firewall.old  | Out-Null
-    netsh advfirewall set allprofiles state on  | Out-Null
-    netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound  | Out-Null
-    netsh advfirewall set allprofiles settings inboundusernotification enable  | Out-Null
-    netsh advfirewall set allprofiles logging filename $ccdcpath\pfirewall.log  | Out-Null
-    netsh advfirewall set allprofiles logging maxfilesize 8192  | Out-Null
-    netsh advfirewall set allprofiles logging droppedconnections enable  | Out-Null
-    netsh advfirewall set allprofiles logging allowedconnections enable  | Out-Null
-    netsh advfirewall set global statefulftp disable  | Out-Null
-    netsh advfirewall set global statefulpptp disable  | Out-Null
-    Write-Host "Function: SplunkLogging   -   Complete" -ForegroundColor Green
+    If ($Splunk -ne $null -or $Splunk -ne ""){
+        netsh advfirewall export $ccdcpath\firewall.old  | Out-Null
+        netsh advfirewall set allprofiles state on  | Out-Null
+        netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound  | Out-Null
+        netsh advfirewall set allprofiles settings inboundusernotification enable  | Out-Null
+        netsh advfirewall set allprofiles logging filename $ccdcpath\pfirewall.log  | Out-Null
+        netsh advfirewall set allprofiles logging maxfilesize 8192  | Out-Null
+        netsh advfirewall set allprofiles logging droppedconnections enable  | Out-Null
+        netsh advfirewall set allprofiles logging allowedconnections enable  | Out-Null
+        netsh advfirewall set global statefulftp disable  | Out-Null
+        netsh advfirewall set global statefulpptp disable  | Out-Null
+        Write-Host "Function: SplunkLogging   -   Complete" -ForegroundColor Green
+    }
     #Continue_
 }
 
@@ -221,7 +194,12 @@ Function Bulk_Firewall {
     netsh advfirewall firewall add rule name="CCDC-Allow Pings Out!" new dir=in  action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-Allow Pings In!"  new dir=out action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
                 # Log OUT to Splunk - May need re configure.
-    netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$Splunk  | Out-Null
+    If ($Splunk -eq $null -or $Splunk -eq $null){
+        $global:Splunk = Read-Host "What is Splunks IP?"
+    }
+    If ($Splunk -ne $null -or $Splunk -ne $null){
+        netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$Splunk  | Out-Null
+    }            
                 # Webshare access
     netsh advfirewall firewall add rule name="CCDC-Web Share OUT"    new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000 remoteip=$Ubuntu18Web  | Out-Null
                 # Internet Access
@@ -340,11 +318,11 @@ Function Damage_Reversal {
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" | Add-Content $regProof
 
                 # Clear remote registry paths
-    #Add-Content $regProof "Clear Remote Registry Paths:"
-    #REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine | Add-Content $regProof
-    #REG add "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine /t REG_MULTI_SZ /d $null /f | Out-Null
-    #New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" -Name 'Machine' -Value "" -Force
-    #REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine | Add-Content $regProof
+    Add-Content $regProof "Clear Remote Registry Paths:"
+    REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine | Add-Content $regProof
+    REG add "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine /t REG_MULTI_SZ /d $null /f | Out-Null
+    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" -Name 'Machine' -Value "" -Force
+    REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine | Add-Content $regProof
 
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedPaths" /v Machine | Add-Content $regProof
     New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedPaths" -Name 'Machine' -Value "" -Force | Out-Null
@@ -465,7 +443,7 @@ Function Win10 {
     Start-Sleep -s 1
     Write-Host "Configuring Win10 Banner..." -ForegroundColor Cyan
     REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" /f | Out-Null
-    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticetext /t REG_SZ /d "This computer system network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." /f | Out-Null
+    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticetext /t REG_SZ /d "This computer system network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Companyâ€™s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Companyâ€™s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." /f | Out-Null
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticetext | Out-Null
     Write-Host "Function: Win10   -   Complete" -ForegroundColor Green
@@ -482,7 +460,7 @@ Function WinServer{
     REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /f | Out-Null
     REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" | Out-Null
     REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /f | Out-Null 
-    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /t REG_SZ /d "This computer system/network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." | Out-Null
+    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /t REG_SZ /d "This computer system/network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Companyâ€™s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Companyâ€™s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." | Out-Null
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption  | Out-Null 
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext  | Out-Null
     REG query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v TcpReceivePacketSize | Add-Content $regProof
@@ -495,9 +473,9 @@ Function WinServer{
     Write-Host "--Screenshot--" -ForegroundColor Yellow
     #Continue_
     
-                # Disable SMB1
-    #Write-Host "Disable SMB1 via Registry..." -ForegroundColor Cyan
-    #REG add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v "SMB1" /t REG_DWORD /d 0 /f | Out-Null
+                 Disable SMB1
+    Write-Host "Disable SMB1 via Registry..." -ForegroundColor Cyan
+    REG add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v "SMB1" /t REG_DWORD /d 0 /f | Out-Null
                 #LDAP 389
     #Write-Host "Create Firewall Rules for LDAP" -ForegroundColor Cyan
     #netsh advfirewall firewall add rule name="CCDC-LDAP Service" dir=in action=allow enable=yes profile=any localport=389 remoteip=$EComm,$WebMail,$PAMI protocol=tcp  | Out-Null
@@ -558,7 +536,7 @@ Function Docker {
     REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" | Out-Null
 
     REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /f | Out-Null 
-    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /t REG_SZ /d "This computer system/network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy (“AUP”). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." | Out-Null
+    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /t REG_SZ /d "This computer system/network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Companyâ€™s Acceptable Use of Information Technology Resources Policy (â€œAUPâ€). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Companyâ€™s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." | Out-Null
 
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption | Out-Null 
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext | Out-Null
@@ -575,24 +553,6 @@ Function Email {
 }
 Function Unknown_Host {
    
-    CCDC_Directories
-
-    Scan_Dirs
-
-    Discovery_
-
-    #Firewall rules
-    $global:Splunk = Read-Host "What IP is Splunk at?"
-    netsh advfirewall firewall set rule name=all new enable=no
-        #Pings
-    netsh advfirewall firewall add rule name="CCDC-Allow Pings Out!" new dir=in  action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
-    netsh advfirewall firewall add rule name="CCDC-Allow Pings In!"  new dir=out action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
-        #Web Access
-    netsh advfirewall firewall add rule name="CCDC-Web Regional"        new dir=out action=allow enable=no protocol=tcp profile=any remoteip=any remoteport=80,443  | Out-Null
-    netsh advfirewall firewall add rule name="CCDC-DNS Regional"        new dir=out action=allow enable=no protocol=udp profile=any remoteport=53  | Out-Null
-        #Splunk
-    netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$Splunk  | Out-Null
-        #Potential Scored Services
     Write-Host "------Server Options------"
     Write-Host "[1] - pop3"
     Write-Host "[2] - SMTP"
@@ -614,22 +574,7 @@ Function Unknown_Host {
         "*7*" {netsh advfirewall firewall add rule name="CCDC-LDAP"  new dir=in action=allow enable=yes protocol=udp profile=any localport=389  | Out-Null}       
     }
 
-    Damage_Reversal
-
-    Splunk_Logging
-    Write-Host "Starting trace..."
-    netsh trace start capture=YES tracefile=$ccdcpath\day1.etl | Out-Null
-
-    CCDC_ICACLS
-
-    Export_Configs
-    Stop-Transcript
-    Write-Host "Process complete..." -ForegroundColor Green
-    
-    Set-ExecutionPolicy Restricted -force
-
-    exit
-
+   
 }
 Function CCDC_ICACLS {
     cls
@@ -700,22 +645,18 @@ If (!($curRoll)){
 Do{
     cls
     Write-Host "------Host Options------"
-    Write-Host "[1] - Win10-Virt"
-    Write-Host "[2] - WinServer-Virt"
-    Write-Host "[3] - Docker"
-    Write-Host "[4] - Email"
-    Write-Host "[5] - WinServer-Hard"
-    Write-Host "[6] - Win10-Hard"
-    Write-Host "[7] - Unknown Host"
+    Write-Host "[1] - External Win10 (CCDC IPs)"
+    Write-Host "[2] - WinServer (CCDC IPs)"
+    Write-Host "[3] - Docker (CCDC IPs)"
+    Write-Host "[4] - Email (Does Nothing)"
+    Write-Host "[5] - Manual Set Up"
     $curhost = Read-Host "Which host are you on? (type the corresponding number)"
     switch ($curhost) {
-        1 {$curhost = "Win10-Virt"}
-        2 {$curhost = "WinServer-Virt"; Set_Internal_IPs_V }
-        3 {$curhost = "Docker";Set_Internal_IPs_V}
-        4 {$curhost = "Email"; Set_Internal_IPs_H}
-        5 {$curhost = "WinServer-Hard"; Set_Internal_IPs_H}
-        6 {$curhost = "Win10-Hard"; Set_Internal_IPs_H}
-        7 {Unknown_Host}
+        1 {$curhost = "External Win10"}
+        2 {$curhost = "WinServer-Virt"; Set_Internal_IPs }
+        3 {$curhost = "Docker";Set_Internal_IPs}
+        4 {$curhost = "Email"}
+        5 {$curhost = "Manual"}
     }
     cls
     Write-Host "Selection: $curhost" -ForegroundColor Yellow
@@ -723,7 +664,7 @@ Do{
 }  Until (($hostanswer -eq "Y") -or ($hostanswer -eq "y"))
 
                 # 3. Team Check
-If ($curhost -eq "Win10-Virt") {
+If ($curhost -eq "External Win10") {
     Do{
         cls               
         $teamNum = Read-Host "Please enter your team number (1-12)"
@@ -774,9 +715,10 @@ Damage_Reversal
                 # 11. Apply Box specific rules
 switch -Wildcard ($curhost) {
     "WinServer*" {Winserver}
-    "Win10-Virt" {Win10}
+    "External Win10" {Win10}
     "Email" {Email}
     "Docker" {Docker}
+    "Manual" {Unknown_Host}
 }
 
 
