@@ -1,4 +1,10 @@
 # BW Winhard.ps1
+param (
+    [string]$curhost,
+    [string]$Splunk,
+    [string]$dname,
+    [switch]$NoAD
+)
 If (!(test-path C:\ccdc)){
     New-Item -Path $path -ItemType Directory -erroraction SilentlyContinue  | Out-Null
     Write-Host ""
@@ -7,12 +13,6 @@ If (!(test-path C:\ccdc)){
 Start-Transcript C:\ccdc\WinhardLog.txt
 Set-ExecutionPolicy Unrestricted -force
                                         ############## Function Row ##############
-param (
-    [string]$curhost,
-    [string]$Splunk,
-    [string]$dname,
-    [switch]$NoAD
-)
 
 Function Continue_ {
     # Please, I am begging you. Do not use this function during competitions. its just pauses the script.
@@ -298,21 +298,17 @@ Function Damage_Reversal {
     reg export HKU $regbackpath\Oldhlku.reg
     reg export HKCC $regbackpath\Oldhlcc.reg
                 # Changing Owner
-    write-host "1"
     Add-Content $regProof "Changing registered owner..."
-    Write-Host "Changing host"
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v RegisteredOwner | Add-Content $regProof
     REG add "HKLM\Software\Microsoft\Windows NT\CurrentVersion" /v RegisteredOwner /t REG_SZ /d blueteam /f
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v RegisteredOwner | Add-Content $regProof
                 # Turning on UAC
-                write-host "2"
     Add-Content $regProof "UAC:"
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA | Add-Content $regProof
     REG add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 1 /f 
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA | Add-Content $regProof
 
                 #Disable admin autologon
-                write-host "3"
     Add-Content $regProof "Disable Admin autologin:"
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon | Add-Content $regProof
     REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_DWORD /d 0 /f 
@@ -320,80 +316,68 @@ Function Damage_Reversal {
 
                 
                 # Unhide Files
-    write-host "10"
     Add-Content $regProof "Unhide Files:"
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden | Add-Content $regProof
     REG add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t REG_DWORD /d 1 /f
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden | Add-Content $regProof
 
                 # Unhide System Files
-                write-host "11"
     Add-Content $regProof "Unhide system files:"
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden | Add-Content $regProof
     REG add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden /t REG_DWORD /d 1 /f | Out-Null
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden | Add-Content $regProof
 
                 # Fix Local Security Authority
-    write-host "12"
     Add-Content $regProof "Restrictanonymous:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymous | Add-Content $regProof
     REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymous /t REG_DWORD /d 1 /f | Out-Null
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymous | Add-Content $regProof
 
                 # Restrict Anonymous SAM
-    write-host "13"
     Add-Content $regproof "Restrict anonymous sam:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymoussam | Add-Content $regProof
     REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymoussam /t REG_DWORD /d 1 /f | Out-Null
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymoussam | Add-Content $regProof
 
                 # Change everyone includes Anonymous
-    write-host "14"
     Add-Content $regProof "Change everyone includes anonymous:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v everyoneincludesanonymous | Add-Content $regProof
     REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v everyoneincludesanonymous /t REG_DWORD /d 0 /f | Out-Null
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v everyoneincludesanonymous | Add-Content $regProof
 
                 # Turn off Local Machine Hash
-    write-host "15"
     Add-Content $regProof "Turn off Local Machine Hash:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v NoLMHash | Add-Content $regProof
     REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v NoLMHash /t REG_DWORD /d 1 /f | Out-Null
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v NoLMHash  | Add-Content $regProof
 
                 # Change Notification Packages
-    write-host "16"
     Add-Content $regProof "Change notification packages:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v "Notification Packages"  | Add-Content $regProof
     REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v "Notification Packages" /t REG_MULTI_SZ /d "scecli" /f | Out-Null
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v "Notification Packages"  | Add-Content $regProof
 
                 # Delete image hijack that kills task manager
-    write-host "17"
     Add-Content $regProof "Re-enable task manager:"
     REG query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe" /v Debugger | Add-Content $regProof
     REG delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe" /f /v Debugger | Out-Null
     REG query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe" /v Debugger | Add-Content $regProof
     
                 # Re-enable task manager
-    write-host "18"
     Add-Content $regProof "Re-enable task manager 2:"
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v DisableTaskMgr | Add-Content $regProof
     REG delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v DisableTaskMgr /f | Out-Null
 
                 # Re-enable CMD Prompt
-    write-host "19"
     Add-Content $regProof "Re-enable cmd prompt:"
     REG query "HKCU\Software\Policies\Microsoft\Windows\System" /v DisableCMD | Add-Content $regProof
     REG delete "HKCU\Software\Policies\Microsoft\Windows\System" /v DisableCMD /f | Out-Null
 
                 # Enable Windows Defender
-    write-host "20"
     Add-Content $regProof "Re-enable Windows Defender:"
     REG query "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware | Add-Content $regProof
     REG delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /f | Out-Null
-                
-    write-host "21"            
+                          
                 # Change setting to NOT store plaintext passwords
     Add-Content $regProof "Removing stored plaintext passwords:"
     REG query "HKLM\SYSTEM\CurrentControlSet\services\LanmanWorkstation\Parametersn" /v EnablePlainTextPassword | Add-Content $regProof
@@ -401,25 +385,21 @@ Function Damage_Reversal {
     REG query "HKLM\SYSTEM\CurrentControlSet\services\LanmanWorkstation\Parameters" /v EnablePlainTextPassword | Add-Content $regProof
                 
                 # Delete use Machine ID
-    write-host "22"
     Add-Content $regProof "Delete use machine id:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v UseMachineID | Add-Content $regProof
     REG delete "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v UseMachineID /f | Out-Null
 
                 # Show Hidden Users in GUI
-    write-host "23"
     Add-Content $regProof "Show hidden users in gui:"
     REG query "HKLM\Software\Microsoft\WindowsNT\CurrentVersion\Winlogon\SpecialAccounts" | Add-Content $regProof
     Reg delete "HKLM\Software\Microsoft\WindowsNT\CurrentVersion\Winlogon\SpecialAccounts" /f | Out-Null
 
                 # Disable Possible Backdoors
-    write-host "24"
     Add-Content $regProof "Disable possible backdoors"
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" | Add-Content $regProof
     REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" /t REG_SZ /d "systray.exe" /f | Out-Null
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" | Add-Content $regProof
 
-    write-host "25"
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\osk.exe" /v Debugger | Add-Content $regProof
     REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\osk.exe" /v Debugger /t REG_SZ /d "systray.exe" /f | Out-Null
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\osk.exe" /v Debugger | Add-Content $regProof
@@ -664,14 +644,14 @@ Function CCDC_ICACLS {
     Write-Host "Starting Function: CCDC_ICACLS" -ForegroundColor Cyan
     Start-Sleep -s 1
     Write-Host "Tighten CCDC ACL..." -ForegroundColor Cyan
-    icacls $ccdcpath\* /inheritance:d 
+    icacls $ccdcpath\* /inheritancelevel:d 
     icacls $ccdcpath /inheritance:d pow
                     # Grants permission to only cur user for ccdc dirs
     $Acl = Get-Acl $ccdcpath
     $Ar = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:username", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
     $Acl.SetAccessRule($Ar)
     $ArLocal = New-Object System.Security.AccessControl.FileSystemAccessRule("localblue", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-    $Acl.setAcessRule($ArLocal)
+    $Acl.setAccessRule($ArLocal)
     Set-Acl $ccdcpath $Acl
     $Acl = Get-Acl $ccdcpath
     $ar2 = New-Object system.security.AccessControl.FileSystemAccessRule("NT AUTHORITY\SYSTEM","Read",,,"Allow")
