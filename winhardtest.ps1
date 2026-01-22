@@ -7,7 +7,7 @@ If (!(test-path C:\ccdc)){
 Start-Transcript C:\ccdc\WinhardLog.txt
 Set-ExecutionPolicy Unrestricted -force
                                         ############## Function Row ##############
-param(
+param (
     [string]$curhost,
     [string]$Splunk,
     [string]$dname,
@@ -248,7 +248,7 @@ Function Damage_Reversal {
         #}
     #}  
                 #Add local Admin account
-    If (!($curhost == "WinServer")){
+    If (!($curhost = "WinServer")){
         $Password = Read-Host "Password for local admin" -AsSecureString
         New-LocalUser -Name "localblue" -Password $Password
         Add-LocalGroupMember -Group "Adminstrators" -Member "localblue"
@@ -318,37 +318,7 @@ Function Damage_Reversal {
     REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_DWORD /d 0 /f 
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon | Add-Content $regProof
 
-                # Windows Updates
-                write-host "4"
-    Add-Content $regProof "Disabling Windows Updates"
-    REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\WindowsUpdate" /v DisableWindowsUpdateAccess | Add-Content $regProof
-    REG add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\WindowsUpdate" /v DisableWindowsUpdateAccess /t Reg_DWORD /d 0 /f | Out-Null
-    REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\WindowsUpdate" /v DisableWindowsUpdateAccess | Add-Content $regProof
-    write-host "5"
-    REG query "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate" /v DisableWindowsUpdateAccess | Add-Content $regProof
-    REG add "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate" /v DisableWindowsUpdateAccess /t Reg_DWORD /d 0 /f | Out-Null
-    REG query "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate" /v DisableWindowsUpdateAccess  | Add-Content $regProof
-    write-host "6"
-    REG query "HKLM\SYSTEM\Internet Communication Management\Internet Communication" /v DisableWindowsUpdateAccess | Add-Content $regProof
-    REG add "HKLM\SYSTEM\Internet Communication Management\Internet Communication" /v DisableWindowsUpdateAccess /t Reg_DWORD /d 0 /f | Out-Null
-    REG query "HKLM\SYSTEM\Internet Communication Management\Internet Communication" /v DisableWindowsUpdateAccess | Add-Content $regProof
-    write-host "7"
-    REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" | Add-Content $regProof
-    REG add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v NoWindowsUpdate /t Reg_DWORD /d 0 /f | Out-Null
-    REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" | Add-Content $regProof
-
-                # Clear remote registry paths
-    write-host "8"
-    Add-Content $regProof "Clear Remote Registry Paths:"
-    REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine | Add-Content $regProof
-    REG add "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine /t REG_MULTI_SZ /d $null /f | Out-Null
-    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" -Name 'Machine' -Value "" -Force
-    REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedExactPaths" /v Machine | Add-Content $regProof
-    write-host "9"
-    REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedPaths" /v Machine | Add-Content $regProof
-    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedPaths" -Name 'Machine' -Value "" -Force | Out-Null
-    REG query "HKLM\SYSTEM\CurrentControlSet\Control\SecurePipeServers\winreg\AllowedPaths" /v Machine | Add-Content $regProof
-
+                
                 # Unhide Files
     write-host "10"
     Add-Content $regProof "Unhide Files:"
@@ -576,7 +546,7 @@ Function WinServer{
     netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to Internal" dir=out action=allow enable=yes profile=any localport=53  protocol=tcp remoteip=$Internal | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS In TCP from Internet" dir=in action=allow enable=yes profile=any localport=53  protocol=tcp  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to Internet" dir=out action=allow enable=yes profile=any localport=53  protocol=tcp  | Out-Null
-    nfire=yes= profile=any remoteport=123 | Out-Null
+    
                  #Disable SMB1
     Write-Host "Disable SMB1 via Registry..." -ForegroundColor Cyan
     REG add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v "SMB1" /t REG_DWORD /d 0 /f | Out-Null
