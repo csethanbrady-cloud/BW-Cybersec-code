@@ -527,8 +527,8 @@ Function WinServer{
 
                 # KERBEROS
         Write-Host "Create Firewall Rules for Kerberos" -ForegroundColor Cyan
-        netsh advfirewall firewall add rule name="CCDC-Kerberos In UDP from Internal" dir=in action=allow enable=yes profile=any localport=88,464 remoteip=$WinWeb, $WinFTP, $ADDNS protocol=udp  | Out-Null
-        netsh advfirewall firewall add rule name="CCDC-Kerberos In TCP from Internal" dir=in action=allow enable=yes profile=any localport=88,464 remoteip=$WinWeb, $WinFTP, $ADDNS protocol=tcp  | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-Kerberos In UDP from Internal" dir=in action=allow enable=yes profile=any localport=88,464 remoteip=$WinWeb, $WinFTP, $ADDNS, $win11wrk protocol=udp  | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-Kerberos In TCP from Internal" dir=in action=allow enable=yes profile=any localport=88,464 remoteip=$WinWeb, $WinFTP, $ADDNS, $win11wrk protocol=tcp  | Out-Null
         netsh advfirewall firewall set rule group="CCDC-Kerberos Key Distribution Center (TCP-In)" new enable=yes  | Out-Null
         netsh advfirewall firewall set rule group="CCDC-Kerberos Key Distribution Center (UDP-In)" new enable=yes  | Out-Null
     }
@@ -551,12 +551,7 @@ Function WinServer{
     Write-Host "Disable SMB1 via Registry..." -ForegroundColor Cyan
     REG add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v "SMB1" /t REG_DWORD /d 0 /f | Out-Null
 
-    Write-Host "Making user panuser..." -ForegroundColor Cyan  
-    dsadd user "cn=panuser,cn=Users,dc=allsafe,dc=com" -samid panuser -fn pa -ln nuser -pwd *
-    net localgroup Administrators panuser /add           | Out-Null
-    net localgroup "Distributed COM Users" panuser /add  | Out-Null
-    net localgroup "Event Log Readers" panuser /add      | Out-Null
-    net localgroup "Remote Desktop Users" panuser /add   | Out-Null
+    
 
                 # Calling Config_NTP_Server
     #Config_NTP_Server - Removed
