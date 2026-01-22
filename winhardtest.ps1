@@ -248,8 +248,8 @@ Function Damage_Reversal {
         #}
     #}  
                 #Add local Admin account
-    If (!($curhost = "WinServer")){
-        $Password = Read-Host "Password for local admin" -AsSecureString
+    If (!($curhost -eq "WinServer")){
+        $Password = Read-Host "Password for local admin:" -AsSecureString
         New-LocalUser -Name "localblue" -Password $Password
         Add-LocalGroupMember -Group "Adminstrators" -Member "localblue"
     }  
@@ -732,7 +732,7 @@ Do{
     Write-Host "[6] - Manual Set Up"
     Write-Host "[7] - FTP Server"
     Write-Host "[8] - Web Server"
-    if ($curhost -eq $null){
+    if ($curhost -eq ""){
         $curhost = Read-Host "Which host are you on? (type the corresponding number)"
         }
     switch ($curhost) {
