@@ -710,7 +710,7 @@ If (!($curRoll)){
     Exit
 }
                 # 2. Team Check
-
+Write-host $Splunk
 Do{
     cls               
     $teamNum = Read-Host "Please enter your team number (1-12)"
@@ -753,7 +753,7 @@ Do{
     $hostanswer = Read-Host "Is this Information correct?  Y/N"
 }  Until (($hostanswer -eq "Y") -or ($hostanswer -eq "y"))
 
-
+write-host $Splunk
 
                 # 4. Setting CCDC directories
 CCDC_Directories
@@ -765,7 +765,7 @@ Discovery_
 #Moved into host check (External in Team Check)
 
                 # 6. Domain Name 
-if($dname -eq $null){
+if($dname -eq ""){
     Do{
         cls               
         Write-Host "What is your domain name? Example:  DOMAIN.COM" -ForegroundColor Cyan
