@@ -734,7 +734,7 @@ Do{
     Write-Host "[6] - Manual Set Up"
     Write-Host "[7] - FTP Server"
     Write-Host "[8] - Web Server"
-    if ($curhost -eq ""){
+    if ($curhost -eq $null){
         $curhost = Read-Host "Which host are you on? (type the corresponding number)"
         }
     switch ($curhost) {
