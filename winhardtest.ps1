@@ -645,14 +645,17 @@ Function CCDC_ICACLS {
     Start-Sleep -s 1
     Write-Host "Tighten CCDC ACL..." -ForegroundColor Cyan
     icacls $ccdcpath\* /inheritancelevel:d 
-    icacls $ccdcpath /inheritance:d pow
+    icacls $ccdcpath /inheritancelevel:d 
                     # Grants permission to only cur user for ccdc dirs
     $Acl = Get-Acl $ccdcpath
     $Ar = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:username", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
     $Acl.SetAccessRule($Ar)
-    $ArLocal = New-Object System.Security.AccessControl.FileSystemAccessRule("localblue", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-    $Acl.setAccessRule($ArLocal)
     Set-Acl $ccdcpath $Acl
+    if(-not($curhost -eq "Winserver")){
+        $ArLocal = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:COMPUTERNAME\localblue", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+        $Acl.setAccessRule($ArLocal)
+        Set-Acl $ccdcpath $Acl
+    }
     $Acl = Get-Acl $ccdcpath
     $ar2 = New-Object system.security.AccessControl.FileSystemAccessRule("NT AUTHORITY\SYSTEM","Read",,,"Allow")
     $Acl.RemoveAccessRuleAll($ar2)
