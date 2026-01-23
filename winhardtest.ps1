@@ -1,8 +1,8 @@
 # BW Winhard.ps1
 param (
-    $curhost,
-    $Splunk,
-    $dname,
+    $global:curhost,
+    $global:Splunk,
+    $global:dname,
     [switch]$NoAD
 )
 If (!(test-path C:\ccdc)){
