@@ -1,8 +1,8 @@
 # BW Winhard.ps1
 param (
-    [string]$curhost,
-    [string]$Splunk,
-    [string]$dname,
+    $curhost,
+    $Splunk,
+    $dname,
     [switch]$NoAD
 )
 If (!(test-path C:\ccdc)){
@@ -710,7 +710,6 @@ If (!($curRoll)){
     Exit
 }
                 # 2. Team Check
-Write-host $Splunk
 Do{
     cls               
     $teamNum = Read-Host "Please enter your team number (1-12)"
@@ -753,7 +752,7 @@ Do{
     $hostanswer = Read-Host "Is this Information correct?  Y/N"
 }  Until (($hostanswer -eq "Y") -or ($hostanswer -eq "y"))
 
-write-host $Splunk
+
 
                 # 4. Setting CCDC directories
 CCDC_Directories
