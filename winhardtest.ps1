@@ -251,7 +251,7 @@ Function Damage_Reversal {
     If (!($curhost -eq "WinServer")){
         $Password = Read-Host "Password for local admin:" -AsSecureString
         New-LocalUser -Name "localblue" -Password $Password
-        Add-LocalGroupMember -Group "Adminstrators" -Member "localblue"
+        Add-LocalGroupMember -Group Adminstrators -Member "localblue"
     }  
 
     Get-LocalUser | Out-File $discoverypath\All-Local-Users.txt
