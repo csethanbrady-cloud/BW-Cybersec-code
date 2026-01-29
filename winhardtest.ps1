@@ -3,6 +3,7 @@ param (
     $curhost,
     $Splunk,
     $dname,
+    $Password,
     [switch]$NoAD
 )
 If (!(test-path C:\ccdc)){
