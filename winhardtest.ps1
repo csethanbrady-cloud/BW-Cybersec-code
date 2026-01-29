@@ -249,7 +249,9 @@ Function Damage_Reversal {
     #}  
                 #Add local Admin account
     If (!($curhost -eq "WinServer")){
-        $Password = Read-Host "Password for local admin:" -AsSecureString
+        if( $Password -eq $null){
+            $Password = Read-Host "Password for local admin:" -AsSecureString
+        }
         New-LocalUser -Name "localblue" -Password $Password
         Add-LocalGroupMember -Group Adminstrators -Member "localblue"
     }  
