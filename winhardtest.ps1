@@ -1,8 +1,8 @@
 # BW Winhard.ps1
 param (
-    $global:curhost,
-    $global:Splunk,
-    $global:dname,
+    $curhost,
+    $Splunk,
+    $dname,
     [switch]$NoAD
 )
 If (!(test-path C:\ccdc)){
@@ -597,7 +597,7 @@ Function WinFTP{
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticetext | Out-Null
    
-   netsh advfirewall firewall add rule name="CCDC-FTP"  new dir=in action=allow enable=yes protocol=tcp profile=any localport=20,21  | Out-Null
+   netsh advfirewall firewall add rule name="CCDC-FTP"  new dir=in action=allow enable=yes protocol=tcp profile=any localport=20,21,80  | Out-Null
 
                    #AD Rules
    If(-not ($NoAD)){
