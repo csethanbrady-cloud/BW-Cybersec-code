@@ -176,7 +176,7 @@ Function Splunk_Logging {
     cls
     Write-Host "Starting Function: Splunk_Logging" -ForegroundColor Cyan
     Start-Sleep -s 1
-    If ($Splunk -ne $null -or $Splunk -ne ""){
+    If ($Splunk -ne ""){
         netsh advfirewall export $ccdcpath\firewall.old  | Out-Null
         netsh advfirewall set allprofiles state on  | Out-Null
         netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound  | Out-Null
@@ -202,7 +202,7 @@ Function Bulk_Firewall {
     netsh advfirewall firewall add rule name="CCDC-Allow Pings Out!" new dir=in  action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-Allow Pings In!"  new dir=out action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
                 # Log OUT to Splunk - May need re configure.
-    If ($Splunk -eq $null -or $Splunk -eq $null){
+    If ($Splunk -eq $null){
         $global:Splunk = Read-Host "What is Splunks IP?"
     }
     If ($Splunk -ne $null -or $Splunk -ne $null){
