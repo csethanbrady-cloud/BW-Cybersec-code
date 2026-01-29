@@ -203,9 +203,9 @@ Function Bulk_Firewall {
     netsh advfirewall firewall add rule name="CCDC-Allow Pings In!"  new dir=out action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
                 # Log OUT to Splunk - May need re configure.
     If ($Splunk -eq $null){
-        $global:Splunk = Read-Host "What is Splunks IP?"
+        $Splunk = Read-Host "What is Splunks IP?"
     }
-    If ($Splunk -ne $null -or $Splunk -ne $null){
+    If ($Splunk -ne $null){
         netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$Splunk  | Out-Null
     }            
                 # Webshare access
@@ -722,6 +722,7 @@ Do{
     }  Until (($teamanswer -eq "Y") -or ($teamanswer -eq "y"))
     $teamNum = [int]$teamNum
     $Team = $teamNum + '20'
+}
     
 
 
