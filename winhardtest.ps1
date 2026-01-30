@@ -202,10 +202,10 @@ Function Bulk_Firewall {
     netsh advfirewall firewall add rule name="CCDC-Allow Pings Out!" new dir=in  action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-Allow Pings In!"  new dir=out action=allow enable=yes protocol=icmpv4:8,any profile=any  | Out-Null
                 # Log OUT to Splunk - May need re configure.
-    If ($Splunk -eq $null){
+    If ($global:Splunk -eq $null){
         $Splunk = Read-Host "What is Splunks IP?"
     }
-    If ($Splunk -ne $null){
+    If ($global:Splunk -ne $null){
         netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$Splunk  | Out-Null
     }            
                 # Webshare access
@@ -249,10 +249,10 @@ Function Damage_Reversal {
         #}
     #}  
                 #Add local Admin account
-    If (!($curhost -eq "WinServer")){
+    If ($curhost -ne "WinServer"){
         if( $Password -eq $null){
             $Password = Read-Host "Password for local admin:" -AsSecureString
-        }
+        }else{$Password = ConvertTo-SecureString -String $Password}
         New-LocalUser -Name "localblue" -Password $Password
         Add-LocalGroupMember -Group Adminstrators -Member "localblue"
     }  
