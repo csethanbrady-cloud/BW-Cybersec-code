@@ -130,7 +130,7 @@ Function Set_Internal_IPs {
     Write-Host "Windows Web: $WinWeb"
     Write-Host "Ubuntu-Wrk: $UbuntuWrk"
     Write-Host "AD-DNS: $ADDNS"
-    Write-Host "Splunk: $Splunk"
+    Write-Host "Splunk: $global:Splunk"
     Write-Host "E-Commerce: $Ecomm"
     Write-Host "WebMail: $WebMail"
     Write-Host "-----------------------------"
@@ -254,7 +254,7 @@ Function Damage_Reversal {
             $Password = Read-Host "Password for local admin:" -AsSecureString
         }else{$Password = ConvertTo-SecureString -AsPlainText $Password -Force}
         New-LocalUser -Name "localblue" -Password $Password
-        Add-LocalGroupMember -Group "Adminstrators" -Member "localblue"
+        Add-LocalGroupMember -Group "Administrators" -Member "localblue"
     }  
 
     Get-LocalUser | Out-File $discoverypath\All-Local-Users.txt
@@ -727,36 +727,38 @@ Do{
 
 
                 # 3. Host Check
-Do{
-    cls
-    Write-Host "------Host Options------"
-    Write-Host "[1] - External Win10 (CCDC IPs)"
-    Write-Host "[2] - WinServer (CCDC IPs)"
-    Write-Host "[3] - Docker (CCDC IPs)"
-    Write-Host "[4] - Internal Workstation"
-    Write-Host "[5] - AD User"
-    Write-Host "[6] - Manual Set Up"
-    Write-Host "[7] - FTP Server"
-    Write-Host "[8] - Web Server"
-    if ($curhost -eq $null){
-        $curhost = Read-Host "Which host are you on? (type the corresponding number)"
+If($curhost -eq $null){
+    Do{
+        cls
+        Write-Host "------Host Options------"
+        Write-Host "[1] - External Win10 (CCDC IPs)"
+        Write-Host "[2] - WinServer (CCDC IPs)"
+        Write-Host "[3] - Docker (CCDC IPs)"
+        Write-Host "[4] - Internal Workstation"
+        Write-Host "[5] - AD User"
+        Write-Host "[6] - Manual Set Up"
+        Write-Host "[7] - FTP Server"
+        Write-Host "[8] - Web Server"
+        if ($curhost -eq $null){
+            $curhost = Read-Host "Which host are you on? (type the corresponding number)"
         }
-    switch ($curhost) {
-        1 {$curhost = "External Win10"}
-        2 {$curhost = "WinServer"; Set_Internal_IPs }
-        3 {$curhost = "Docker";Set_Internal_IPs}
-        4 {$curhost = "Workstation"; Set_Internal_IPs}
-        5 {$curhost = "AD User"; Set_Internal_IPs}
-        6 {$curhost = "Manual"}
-        7 {$curhost = "FTP Server"; Set_Internal_IPs}
-        8 {$curhost = "Web Server"; Set_Internal_IPs}
-    }
+ 
+    
     cls
     Write-Host "Selection: $curhost" -ForegroundColor Yellow
     $hostanswer = Read-Host "Is this Information correct?  Y/N"
 }  Until (($hostanswer -eq "Y") -or ($hostanswer -eq "y"))
-
-
+}
+switch ($curhost) {
+    1 {$curhost = "External Win10"}
+    2 {$curhost = "WinServer"; Set_Internal_IPs }
+    3 {$curhost = "Docker";Set_Internal_IPs}
+    4 {$curhost = "Workstation"; Set_Internal_IPs}
+    5 {$curhost = "AD User"; Set_Internal_IPs}
+    6 {$curhost = "Manual"}
+    7 {$curhost = "FTP Server"; Set_Internal_IPs}
+    8 {$curhost = "Web Server"; Set_Internal_IPs}
+}
 
                 # 4. Setting CCDC directories
 CCDC_Directories
@@ -768,7 +770,7 @@ Discovery_
 #Moved into host check (External in Team Check)
 
                 # 6. Domain Name 
-if($dname -eq ""){
+if($dname -eq $null){
     Do{
         cls               
         Write-Host "What is your domain name? Example:  DOMAIN.COM" -ForegroundColor Cyan
