@@ -118,7 +118,7 @@ Function Set_Internal_IPs {
     $global:WinWeb = "172.20.240.101"
     $global:UbuntuWrk = "172.25.$Team.0/24"
     $global:ADDNS = "172.20.240.102"
-    $global:Splunk = "172.25.$Team.9"
+    $Splunk = "172.25.$Team.9"
     $global:EComm = "172.25.$Team.11"
     $global:WebMail = "172.25.$Team.39"
     $global:Internal = @($Win11wrk,$WinFTP,$WinWeb,$UbuntuWrk,$ADDNS,$Splunk,$EComm,$WebMail)
@@ -254,7 +254,7 @@ Function Damage_Reversal {
             $Password = Read-Host "Password for local admin:" -AsSecureString
         }else{$Password = ConvertTo-SecureString -AsPlainText $Password -Force}
         New-LocalUser -Name "localblue" -Password $Password
-        Add-LocalGroupMember -Group Adminstrators -Member "localblue"
+        Add-LocalGroupMember -Group "Adminstrators" -Member "localblue"
     }  
 
     Get-LocalUser | Out-File $discoverypath\All-Local-Users.txt
