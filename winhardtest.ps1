@@ -118,7 +118,7 @@ Function Set_Internal_IPs {
     $global:WinWeb = "172.20.240.101"
     $global:UbuntuWrk = "172.25.$Team.0/24"
     $global:ADDNS = "172.20.240.102"
-    $Splunk = "172.25.$Team.9"
+    $global:Splunk = "172.25.$Team.9"
     $global:EComm = "172.25.$Team.11"
     $global:WebMail = "172.25.$Team.39"
     $global:Internal = @($Win11wrk,$WinFTP,$WinWeb,$UbuntuWrk,$ADDNS,$Splunk,$EComm,$WebMail)
@@ -206,7 +206,7 @@ Function Bulk_Firewall {
         $Splunk = Read-Host "What is Splunks IP?"
     }
     If ($global:Splunk -ne $null){
-        netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$Splunk  | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$global:Splunk  | Out-Null
     }            
                 # Webshare access
     netsh advfirewall firewall add rule name="CCDC-Web Share OUT"    new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000 remoteip=$Ubuntu18Web  | Out-Null
