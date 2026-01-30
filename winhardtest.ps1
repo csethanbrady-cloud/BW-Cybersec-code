@@ -252,7 +252,7 @@ Function Damage_Reversal {
     If ($curhost -ne "WinServer"){
         if( $Password -eq $null){
             $Password = Read-Host "Password for local admin:" -AsSecureString
-        }else{$Password = ConvertTo-SecureString -String $Password}
+        }else{$Password = ConvertTo-SecureString -AsPlainText $Password -Force}
         New-LocalUser -Name "localblue" -Password $Password
         Add-LocalGroupMember -Group Adminstrators -Member "localblue"
     }  
