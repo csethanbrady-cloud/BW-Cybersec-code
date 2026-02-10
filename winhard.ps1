@@ -719,9 +719,9 @@ If (!($curRoll)){
     Start-Sleep -s 2
     Exit
 }
-                # 2. Change Access Controls
+                
 
-CCDC_ICACLS
+
 
 
                 # 3. Team Check
@@ -771,8 +771,11 @@ switch ($curhost) {
     7 {$curhost = "FTP Server"; Set_Internal_IPs}
     8 {$curhost = "Web Server"; Set_Internal_IPs}
 }
+                # 2. Change Access Controls
+CCDC_ICACLS
 
                 # 5. Setting CCDC directories
+
 
 CCDC_Directories
 
