@@ -205,7 +205,7 @@ Function Bulk_Firewall {
     Write-Host "Starting Function: Bulk_Firewall" -ForegroundColor Cyan
     Start-Sleep -s 1
 
-    Invoke-WebRequest "http://raw.githubusercontent.com\bwcybersec\ccdc\main\windown.ps1" -OutFile "C:\ccdc\windown.ps1"
+    Invoke-WebRequest "http://raw.githubusercontent.com/bwcybersec/ccdc/main/windown.ps1" -OutFile "C:\ccdc\windown.ps1"
                 # Disable ALL Existing Firewall Rules
     netsh advfirewall firewall set rule name=all new enable=no
                 # Pings
@@ -221,7 +221,7 @@ Function Bulk_Firewall {
                 # Internet Access
     netsh advfirewall firewall add rule name="CCDC-Web Regional"        new dir=out action=allow enable=yes protocol=tcp profile=any remoteip=any remoteport=80,443  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Regional"        new dir=out action=allow enable=yes protocol=udp profile=any remoteport=53  | Out-Null
-    Start-Process -FilePath "powershell.exe" -ArgumentList "-Noprofile", "-File", "C:\ccdc\windown.ps1"
+    Start-Process -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Noprofile", "-File", "C:\ccdc\windown.ps1"
                 # Intranet Access
     netsh advfirewall firewall add rule name="CCDC-Web Regional (INT)"  new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=80,443 remoteip=$Internal  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Regional (INT)"  new dir=out action=allow enable=yes protocol=udp profile=any remoteport=53 remoteip=$ADDNS | Out-Null
@@ -528,7 +528,7 @@ Function WinServer{
     netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to Internal" dir=out action=allow enable=yes profile=any localport=53  protocol=tcp remoteip=$Internal | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS In TCP from Internet" dir=in action=allow enable=yes profile=any localport=53  protocol=tcp  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to Internet" dir=out action=allow enable=yes profile=any localport=53  protocol=tcp  | Out-Null
-    dnscmd /zoneexport $dName
+    dnscmd /zoneexport $dName "$dName.dns"
                  #Disable SMB1
     Write-Host "Disable SMB1 via Registry..." -ForegroundColor Cyan
     REG add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v "SMB1" /t REG_DWORD /d 0 /f | Out-Null
