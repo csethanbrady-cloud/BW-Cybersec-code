@@ -108,6 +108,7 @@ Function Discovery_ {
      # Reg edits / Get-ItemProperty
     $global:regProof = "$proofpath\regproof.txt"
                 # Saving old reg
+    Write-Host "Taking a backup of Registry"
     reg export HKLM $regbackpath\Oldhlkm.reg
     reg export HKCU $regbackpath\Oldhkcu.reg
     reg export HKCR $regbackpath\Oldhlcr.reg
@@ -667,8 +668,9 @@ Function CCDC_ICACLS {
     Write-Host "Starting Function: CCDC_ICACLS" -ForegroundColor Cyan
     Start-Sleep -s 1
                     #Add local Admin account
-    Write-host "Adding localblue Account"
+    
     If ($curhost -ne "WinServer"){
+        Write-host "Adding localblue Account"
         if( $Password -eq $null){
             $Password = Read-Host "Password for local admin:" -AsSecureString
         }else{$Password = ConvertTo-SecureString -AsPlainText $Password -Force}
