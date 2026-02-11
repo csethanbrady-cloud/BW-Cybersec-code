@@ -511,9 +511,9 @@ Function WinServer{
         netsh advfirewall firewall set rule group="CCDC-Kerberos Key Distribution Center (TCP-In)" new enable=yes  | Out-Null
         netsh advfirewall firewall set rule group="CCDC-Kerberos Key Distribution Center (UDP-In)" new enable=yes  | Out-Null
 
-        netsh advfirewall firewall add rule name="CCDC-NetBIOS" dir=in action=allow enable=yes profile=any localport=445 remoteip=172.20.240.0/24 protocol=tcp | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-NetBIOS" dir=in action=allow enable=no profile=any localport=445 remoteip=172.20.240.0/24 protocol=tcp | Out-Null
 
-        netsh advfirewall firewall add rule name="RPC" dir=out action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=localsubnet | Out-Null
+        netsh advfirewall firewall add rule name="CCDC-RPC In" dir=in action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=localsubnet | Out-Null
     }
                 # DNS 53
     Write-Host "Create Firewall Rules for DNS access for Internet and Intranet" -ForegroundColor Cyan
@@ -575,6 +575,10 @@ Function Docker {
 Function WinWeb{
    Write-Host "Starting Function: WinWeb" -ForegroundColor Cyan
 
+
+
+   REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /f | Out-Null
+   REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /f | Out-Null
    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" /f | Out-Null
    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticetext /t REG_SZ /d "This computer system network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." /f | Out-Null
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
@@ -584,7 +588,8 @@ Function WinWeb{
    
    If(-not ($NoAD)){
         netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=no profile=any localport=88,464 remoteip=$ADDNS protocol=tcp | Out-Null
-        netsh advfirewall firewall add rule name="CCDC-RPC" dir=in action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
+        netsh advfirewall firewall add rule name="CCDC-RPC" dir=out action=allow enable=yes profile=any protocol=tcp localport=49152-65535 remoteip=$ADDNS |Out-Null
+        netsh advfirewall firewall add rule name="CCDC-SMB" dir=out action=allow enable=yes profile=any protocol=tcp localport=445 remoteip=$ADDNS |Out-Null
         netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=out action=allow enable=no profile=any localport=389,636 remoteip=$ADDNS protocol=tcp  | Out-Null
    }
 
@@ -597,6 +602,9 @@ Function WinWeb{
 Function WinFTP{
    Write-Host "Starting Function: WinFTP" -ForegroundColor Cyan
 
+
+   REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /f | Out-Null
+   REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /f | Out-Null
    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" /f | Out-Null
    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticetext /t REG_SZ /d "This computer system network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." /f | Out-Null
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
@@ -608,7 +616,8 @@ Function WinFTP{
    If(-not ($NoAD)){
        netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=yes profile=any localport=88,464 remoteip=$ADDNS protocol=tcp  | Out-Null
        netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=out action=allow enable=yes profile=any localport=389,636 remoteip=$ADDNS protocol=tcp  | Out-Null
-       netsh advfirewall firewall add rule name="CCDC-RPC" dir=in action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
+       netsh advfirewall firewall add rule name="CCDC-SMB" dir=out action=allow enable=yes profile=any protocol=tcp localport=445 remoteip=$ADDNS |Out-Null
+       netsh advfirewall firewall add rule name="CCDC-RPC" dir=out action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
    }
    $source = "C:\inetpub\wwwroot"
    $dest = "C:\ccdc\", "C:\Windows\System32\drivers\en-US", "C:\ProgramData"
@@ -616,7 +625,9 @@ Function WinFTP{
 }
 Function AD_User{
    Write-Host "Starting Function: AD_User" -ForegroundColor Cyan
-    
+   
+   REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /f | Out-Null
+   REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /f | Out-Null 
    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" /f | Out-Null
    REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticetext /t REG_SZ /d "This computer system network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." /f | Out-Null
    REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
@@ -626,7 +637,8 @@ Function AD_User{
    If(-not ($NoAD)){
        netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=yes profile=any localport=88,464 remoteip=$ADDNS protocol=tcp  | Out-Null
        netsh advfirewall firewall add rule name="CCDC-LDAP Service SSL" dir=out action=allow enable=yes profile=any localport=389,636 remoteip=$ADDNS protocol=tcp  | Out-Null
-       netsh advfirewall firewall add rule name="CCDC-RPC" dir=in action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
+       netsh advfirewall firewall add rule name="CCDC-SMB" dir=out action=allow enable=yes profile=any protocol=tcp localport=445 remoteip=$ADDNS |Out-Null
+       netsh advfirewall firewall add rule name="CCDC-RPC" dir=out action=allow enable=yes profile=any protocol=tcp remoteport=49152-65535 remoteip=$ADDNS |Out-Null
    }
 
 }
@@ -656,6 +668,8 @@ Function Unknown_Host {
         "*8*" {netsh advfirewall firewall add rule name="CCDC-Kerberos Out" dir=out action=allow enable=yes profile=any localport=88,464  protocol=tcp | Out-Null}     
     }
     #Legal Notice Registry Key
+    REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticecaption /f | Out-Null
+    REG delete "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v legalnoticetext /f | Out-Null
     REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticecaption /t REG_SZ /d "* * * * * * * * * * W A R N I N G * * * * * * * * * *" /f | Out-Null
     REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Winlogon" /v legalnoticetext /t REG_SZ /d "This computer system network is the property of $dName. It is for authorized use only. By using this system, all users acknowledge notice of, and agree to comply with, the Company’s Acceptable Use of Information Technology Resources Policy ('AUP'). Users have no personal privacy rights in any materials they place, view, access, or transmit on this system. The Company complies with state and federal law regarding certain legally protected confidential information, but makes no representation that any uses of this system will be private or confidential. Any or all uses of this system and all files on this system may be intercepted, monitored, recorded, copied, audited, inspected, and disclosed to authorized Company and law enforcement personnel, as well as authorized individuals of other organizations. By using this system, the user consents to such interception, monitoring, recording, copying, auditing, inspection, and disclosure at the discretion of authorized Company personnel. Unauthorized or improper use of this system may result in administrative disciplinary action, civil charges/criminal penalties, and/or other sanctions as set forth in the Company’s AUP. By continuing to use this system you indicate your awareness of and consent to these terms and conditions of use. ALL USERS SHALL LOG OFF OF A $dName OWNED SYSTEM IMMEDIATELY IF SAID USER DOES NOT AGREE TO THE CONDITIONS STATED ABOVE." /f | Out-Null
     REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticecaption | Out-Null
