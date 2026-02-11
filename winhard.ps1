@@ -667,6 +667,17 @@ Function CCDC_ICACLS {
     cls
     Write-Host "Starting Function: CCDC_ICACLS" -ForegroundColor Cyan
     Start-Sleep -s 1
+    $paths = @(
+    "C:\Program Files",
+    "C:\Program Files (x86)",
+    "C:\Users",
+    "C:\ccdc"
+)
+    $script:dname= (Get-CimInstance Win32_ComputerSystem).Domain
+    foreach ($path in $paths) {
+        icacls $path /grant:r "$dname\administrator:(OI)(CI)F" /T /C > $null 2>&1
+    }
+    icacls "C:\Windows" /grant "$dname\administrator:(OI)(CI)RX"  
                     #Add local Admin account
     
     If ($curhost -ne "WinServer"){
@@ -676,10 +687,12 @@ Function CCDC_ICACLS {
         }else{$Password = ConvertTo-SecureString -AsPlainText $Password -Force}
         New-LocalUser -Name "localblue" -Password $Password
         Add-LocalGroupMember -Group "Administrators" -Member "localblue"
-        icacls "C:\" /grant:r "localblue:(OI)(CI)F"
+        foreach ($path in $paths) {
+            icacls $path /grant "localblue:(OI)(CI)F" /T /C  > $null 2>&1
+        }
+        icacls "C:\Windows" /grant "localblue:(OI)(CI)RX"
     }
-    $script:dname= (Get-CimInstance Win32_ComputerSystem).Domain  
-   icacls "C:\" /grant:r "$domainname\administrator:(OI)(CI)F"
+   
    # Continue_
 }
 
