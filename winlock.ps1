@@ -43,7 +43,7 @@ ForEach ($adapter in $Adapters  ) {
 
 
             # Disable Possible Backdoors
-Add-Content $regProof "Disable possible backdoors"
+Add-Content "Disable possible backdoors"
 REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" 
 REG add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" /t REG_SZ /d "systray.exe" /f 
 REG query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe" /v "Debugger" 
@@ -108,4 +108,6 @@ REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoti
 REG query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WinLogon" /v legalnoticetext 
 
 Start-Process -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Noprofile", "-File", "C:\windown.ps1"
+Start-Sleep -Seconds 4
+Stop-Transcript
 Set-ExecutionPolicy Restricted -force
